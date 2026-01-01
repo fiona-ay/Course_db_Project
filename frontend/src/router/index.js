@@ -23,7 +23,17 @@ const routes = [
     name: 'Equipment',
     component: () => import('@/views/Equipment.vue'),
     meta: {
-      title: '设备管理'
+      title: '设备列表',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/equipment/:id',
+    name: 'EquipmentDetail',
+    component: () => import('@/views/EquipmentDetail.vue'),
+    meta: {
+      title: '设备详情',
+      requiresAuth: true
     }
   },
   {
@@ -41,9 +51,19 @@ const router = createRouter({
   routes
 })
 
+import { useUserStore } from '@/stores/user'
+
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - 高校大型仪器设备共享服务平台` : '高校大型仪器设备共享服务平台'
-  next()
+  
+  // 检查是否需要登录
+  const userStore = useUserStore()
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    // 需要登录但未登录，跳转到首页
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router

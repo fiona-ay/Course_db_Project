@@ -22,3 +22,11 @@ python-dotenv==1.0.0
 # 其他工具
 click==8.1.7
 
+# Redis 缓存
+redis==5.0.1
+
+# JWT 认证
+PyJWT==2.8.0
+
+# CORS 支持
+flask-cors==4.0.0

@@ -59,8 +59,14 @@
                 />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" size="large" class="login-btn" @click="handleLogin">
-                  登录
+                <el-button 
+                  type="primary" 
+                  size="large" 
+                  class="login-btn" 
+                  :loading="loading"
+                  @click="handleLogin"
+                >
+                  {{ loading ? '登录中...' : '登录' }}
                 </el-button>
               </el-form-item>
               <el-form-item class="forgot-password">
@@ -219,8 +225,10 @@ import {
   ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // 登录表单
 const loginForm = ref({
@@ -229,6 +237,7 @@ const loginForm = ref({
 })
 
 const activeRole = ref('student')
+const loading = ref(false)
 
 // 图标映射
 const iconMap = {
@@ -301,13 +310,41 @@ const topEquipment = ref([
 const activeTimeRange = ref('week')
 
 // 处理登录
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!loginForm.value.username || !loginForm.value.password) {
     ElMessage.warning('请输入学号/工号和密码')
     return
   }
-  ElMessage.success('登录功能开发中...')
-  // TODO: 实现登录逻辑
+  
+  loading.value = true
+  try {
+    const result = await userStore.login(
+      loginForm.value.username,
+      loginForm.value.password,
+      activeRole.value
+    )
+    
+    if (result.success) {
+      ElMessage.success('登录成功！')
+      // 确保 token 已保存到 localStorage
+      const token = localStorage.getItem('token')
+      if (!token) {
+        ElMessage.error('Token 保存失败，请重新登录')
+        return
+      }
+      console.log('[DEBUG] 登录成功，token 已保存:', token.substring(0, 20) + '...')
+      // 等待一下确保状态同步，再跳转
+      await new Promise(resolve => setTimeout(resolve, 200))
+      // 登录成功后跳转到设备列表页
+      router.push('/equipment')
+    } else {
+      ElMessage.error(result.message || '登录失败')
+    }
+  } catch (error) {
+    ElMessage.error('登录失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 // 处理忘记密码

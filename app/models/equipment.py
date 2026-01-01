@@ -22,6 +22,15 @@ class Equipment(db.Model, ToDictMixin):
     reservations = db.relationship('Reservation', backref='equipment', lazy='dynamic')
     time_slots = db.relationship('TimeSlot', backref='equipment', lazy='dynamic', cascade='all, delete-orphan')
     
+    # 添加索引：优化查询性能
+    __table_args__ = (
+        db.Index('idx_equipment_lab_id', 'lab_id'),
+        db.Index('idx_equipment_status', 'status'),
+        db.Index('idx_equipment_category', 'category'),
+        db.Index('idx_equipment_lab_status', 'lab_id', 'status'),
+        db.Index('idx_equipment_name', 'name'),  # 设备名称索引，用于关键词搜索
+    )
+    
     def __repr__(self):
         return f'<Equipment {self.id}: {self.name}>'
 

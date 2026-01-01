@@ -42,12 +42,37 @@
               </el-menu-item>
             </el-menu>
             <div class="header-actions">
-              <el-button type="primary" plain @click="handleLogin">
-                登录
-              </el-button>
-              <el-button type="primary" @click="handleRegister">
-                注册
-              </el-button>
+              <template v-if="userStore.isLoggedIn">
+                <el-dropdown @command="handleCommand">
+                  <span class="user-info">
+                    <el-icon><User /></el-icon>
+                    {{ userStore.userInfo?.name || '用户' }}
+                    <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item disabled>
+                        <span style="color: #999; font-size: 12px">
+                          {{ userStore.userInfo?.user_type === 'student' ? '学生' : 
+                             userStore.userInfo?.user_type === 'teacher' ? '教师' : '管理员' }}
+                        </span>
+                      </el-dropdown-item>
+                      <el-dropdown-item command="logout" divided>
+                        <el-icon><SwitchButton /></el-icon>
+                        退出登录
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+              <template v-else>
+                <el-button type="primary" plain @click="handleLogin">
+                  登录
+                </el-button>
+                <el-button type="primary" @click="handleRegister">
+                  注册
+                </el-button>
+              </template>
             </div>
           </div>
         </div>
@@ -66,20 +91,35 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Document, HomeFilled, Box, QuestionFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { Document, HomeFilled, Box, QuestionFilled, User, ArrowDown, SwitchButton } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const activeMenu = computed(() => route.path)
 
 const handleLogin = () => {
-  ElMessage.info('请使用首页登录功能')
   router.push('/')
 }
 
 const handleRegister = () => {
   ElMessage.info('注册功能开发中...')
+}
+
+const handleCommand = (command) => {
+  if (command === 'logout') {
+    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      userStore.logout()
+      ElMessage.success('已退出登录')
+      router.push('/')
+    }).catch(() => {})
+  }
 }
 </script>
 

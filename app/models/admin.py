@@ -11,6 +11,7 @@ class Admin(db.Model, ToDictMixin):
     
     id = db.Column(db.String(10), primary_key=True, comment='管理员ID')
     name = db.Column(db.String(20), nullable=False, comment='管理员姓名')
+    password_hash = db.Column(db.String(255), nullable=True, comment='密码Hash值')
     manage_scope = db.Column(db.Integer, db.ForeignKey('laboratory.id'), nullable=True, comment='管理范围（实验室ID）')
     
     def __repr__(self):

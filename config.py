@@ -80,6 +80,25 @@ class Config:
         ]
     }
 
+    # Redis 配置
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
+    REDIS_DB = int(os.getenv('REDIS_DB', 0))
+    REDIS_DECODE_RESPONSES = True  # 自动解码响应为字符串
+    
+    # Redis 连接池配置
+    REDIS_SOCKET_TIMEOUT = int(os.getenv('REDIS_SOCKET_TIMEOUT', 5))
+    REDIS_SOCKET_CONNECT_TIMEOUT = int(os.getenv('REDIS_SOCKET_CONNECT_TIMEOUT', 5))
+    
+    # Redis 缓存配置
+    CACHE_TYPE = 'redis'
+    CACHE_REDIS_HOST = REDIS_HOST
+    CACHE_REDIS_PORT = REDIS_PORT
+    CACHE_REDIS_PASSWORD = REDIS_PASSWORD
+    CACHE_REDIS_DB = REDIS_DB
+    CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', 300))  # 默认5分钟
+
 
 class DevelopmentConfig(Config):
     """开发环境配置"""

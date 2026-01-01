@@ -27,11 +27,22 @@ class Reservation(db.Model, ToDictMixin):
     end_time = db.Column(db.DateTime, nullable=True, comment='结束时间（冗余字段）')
     
     # 添加约束：student_id 和 teacher_id 必须有一个不为空，但不能同时为空
+    # 添加索引：优化查询性能
     __table_args__ = (
         db.CheckConstraint(
             '(student_id IS NOT NULL AND teacher_id IS NULL) OR (student_id IS NULL AND teacher_id IS NOT NULL)',
             name='check_reservation_user'
         ),
+        # 单列索引
+        db.Index('idx_reservation_equip_id', 'equip_id'),
+        db.Index('idx_reservation_student_id', 'student_id'),
+        db.Index('idx_reservation_teacher_id', 'teacher_id'),
+        db.Index('idx_reservation_status', 'status'),
+        db.Index('idx_reservation_apply_time', 'apply_time'),
+        # 组合索引：优化常见查询场景
+        db.Index('idx_reservation_equip_status', 'equip_id', 'status'),
+        db.Index('idx_reservation_student_status', 'student_id', 'status'),
+        db.Index('idx_reservation_teacher_status', 'teacher_id', 'status'),
     )
     
     def __repr__(self):

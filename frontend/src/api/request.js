@@ -1,20 +1,38 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+import router from '@/router'
 
 // 创建 axios 实例
+// 使用相对路径，让 Vite 代理处理
 const service = axios.create({
-  baseURL: '/api/v1',
-  timeout: 10000
+  baseURL: '/api/v1',  // 相对路径，会通过 Vite 代理
+  timeout: 10000,
+  // 确保请求头正确设置
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 可以在这里添加 token 等认证信息
-    // const token = localStorage.getItem('token')
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
+    // 登录接口和 OPTIONS 预检请求不需要 token
+    if (config.url === '/auth/login' || config.method?.toUpperCase() === 'OPTIONS') {
+      return config
+    }
+    
+    // 添加 token 认证信息（优先从 localStorage 读取，确保最新）
+    const token = localStorage.getItem('token')
+    
+    if (token) {
+      // 确保 Authorization header 包含 Bearer 前缀
+      config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`
+      console.log('[DEBUG] 请求添加 token:', config.method, config.url, 'Token:', token.substring(0, 20) + '...')
+    } else {
+      console.warn('[DEBUG] 请求缺少 token:', config.method, config.url)
+      console.warn('[DEBUG] localStorage token:', localStorage.getItem('token'))
+    }
     return config
   },
   error => {
@@ -46,6 +64,18 @@ service.interceptors.response.use(
       // 服务器返回了错误状态码
       const res = error.response.data
       message = res?.msg || res?.message || `请求失败 (${error.response.status})`
+      
+      // 401 未授权，清除token并跳转到登录页
+      if (error.response.status === 401) {
+        // 使用 store 的 logout 方法，确保状态同步
+        const userStore = useUserStore()
+        userStore.logout()
+        
+        // 使用 router 跳转，避免强制刷新
+        if (router.currentRoute.value.path !== '/') {
+          router.push('/')
+        }
+      }
     } else if (error.request) {
       // 请求已发出但没有收到响应
       message = '网络错误，请检查网络连接'

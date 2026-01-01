@@ -17,6 +17,14 @@ class AuditLog(db.Model, ToDictMixin):
     detail = db.Column(db.Text, nullable=True, comment='操作详情')
     ip_address = db.Column(db.String(45), nullable=True, comment='IP地址')
     
+    # 添加索引：优化查询性能
+    __table_args__ = (
+        db.Index('idx_auditlog_operator_id', 'operator_id'),
+        db.Index('idx_auditlog_action_time', 'action_time'),
+        db.Index('idx_auditlog_action_type', 'action_type'),
+        db.Index('idx_auditlog_operator_time', 'operator_id', 'action_time'),
+    )
+    
     def __repr__(self):
         return f'<AuditLog {self.id}: {self.operator_id} - {self.action_type}>'
 

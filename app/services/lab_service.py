@@ -13,7 +13,7 @@ def get_lab_list():
     查询所有实验室
     
     Returns:
-        list: 实验室列表
+        list: 实验室对象列表
     """
     labs = Laboratory.query.all()
     return labs

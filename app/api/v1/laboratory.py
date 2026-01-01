@@ -11,6 +11,7 @@ from app.api.v1.schemas.lab_schema import (
 )
 from app.utils.response import success, fail
 from app.utils.exceptions import NotFoundError, ValidationError
+from app.utils.redis_client import redis_client
 
 # 创建蓝图
 lab_bp = Blueprint('laboratory', __name__)
@@ -51,11 +52,22 @@ lab_update_schema = LaboratoryUpdateSchema()
     }
 })
 def get_labs():
-    """获取所有实验室"""
+    """获取所有实验室（带缓存）"""
     try:
+        # 尝试从缓存获取序列化后的数据
+        cache_key = 'api:lab:list'
+        cached_data = redis_client.get(cache_key)
+        if cached_data is not None:
+            # 缓存命中，直接返回（完全跳过数据库查询和序列化）
+            return success(data=cached_data, msg='查询成功')
+        
+        # 缓存未命中，查询数据库并序列化
         labs = lab_service.get_lab_list()
-        # 使用 Schema 序列化
         data = lab_schema.dump(labs, many=True)
+        
+        # 存入缓存（10分钟过期）
+        redis_client.set(cache_key, data, ex=600)
+        
         return success(data=data, msg='查询成功')
     except Exception as e:
         return fail(code=500, msg=f'查询失败: {str(e)}')
@@ -120,6 +132,9 @@ def create_lab():
         
         # 调用 Service 层创建实验室
         lab = lab_service.create_lab(validated_data)
+        
+        # 清除相关缓存
+        redis_client.delete('api:lab:list')
         
         # 序列化返回
         data = lab_schema.dump(lab)
@@ -201,6 +216,10 @@ def update_lab(lab_id):
         # 调用 Service 层更新实验室（会自动更新学生表的冗余字段）
         lab = lab_service.update_lab(lab_id, validated_data)
         
+        # 清除相关缓存
+        redis_client.delete('api:lab:list')
+        redis_client.delete(f'api:lab:detail:{lab_id}')
+        
         # 序列化返回
         data = lab_schema.dump(lab)
         return success(data=data, msg='更新成功')
@@ -247,6 +266,11 @@ def delete_lab(lab_id):
     """删除实验室"""
     try:
         lab_service.delete_lab(lab_id)
+        
+        # 清除相关缓存
+        redis_client.delete('api:lab:list')
+        redis_client.delete(f'api:lab:detail:{lab_id}')
+        
         return success(msg='删除成功')
     except NotFoundError as e:
         return fail(code=404, msg=e.message)
