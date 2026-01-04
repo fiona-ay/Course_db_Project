@@ -153,7 +153,7 @@ copy env.example .env
 cp env.example .env
 ```
 
-编辑 `.env` 文件，配置数据库连接信息：
+编辑 `.env` 文件，配置数据库连接信息（具体配置见doc目录下开发说明书）：
 
 ```env
 # Flask 环境配置
@@ -183,33 +183,7 @@ REDIS_PASSWORD=
 REDIS_DB=0
 ```
 
-#### 3. 初始化数据库
-
-```bash
-# 初始化迁移目录（如果还没有）
-flask db init
-
-# 创建初始迁移
-flask db migrate -m "Initial migration"
-
-# 应用迁移
-flask db upgrade
-```
-
-#### 4. 初始化用户数据
-
-使用 Flask CLI 命令初始化测试用户（学生、教师、管理员）：
-
-```bash
-flask init-users
-```
-
-默认创建的测试用户：
-- **学生**: ID=`2023001`, 密码=`123456`
-- **教师**: ID=`T001`, 密码=`123456`
-- **管理员**: ID=`admin`, 密码=`123456`
-
-#### 5. 运行后端服务
+#### 3. 运行后端服务
 
 ```bash
 python run.py
@@ -223,7 +197,7 @@ flask run
 
 后端服务将在 `http://localhost:5000` 启动。
 
-#### 6. 访问 API 文档
+#### 4. 访问 API 文档
 
 启动应用后，访问 Swagger UI 文档：
 
@@ -261,6 +235,8 @@ npm run build
 ```
 
 构建产物将输出到 `frontend/dist` 目录。
+
+> 记得开启redis，否则无法使用。需要在本地下载redis并运行redis-server.exe
 
 ## 环境变量说明
 
