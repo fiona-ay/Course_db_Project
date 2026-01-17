@@ -12,7 +12,8 @@ from app.utils.response import success, fail
 from app.utils.exceptions import NotFoundError, ValidationError
 from app.utils.auth import admin_required
 from app.utils.redis_client import redis_client
-
+# 在文件顶部添加导入
+from app.utils.auth import admin_required, get_current_user
 # 创建蓝图
 admin_bp = Blueprint('admin', __name__)
 
@@ -248,3 +249,211 @@ def _clear_equipment_cache(equip_id=None):
     # 如果需要立即清除所有列表缓存，可以使用 Redis SCAN 命令遍历删除
     # 这里简化处理，让列表缓存自然过期（5分钟）
 
+# 在文件末尾添加以下代码
+
+from app.services import reservation_service
+from app.api.v1.schemas.reservation_schema import ReservationSchema, ReservationQuerySchema
+
+# 实例化 Schema
+reservation_schema = ReservationSchema()
+reservation_query_schema = ReservationQuerySchema()
+
+
+@admin_bp.route('/reservations', methods=['GET'])
+@admin_required
+@swag_from({
+    'tags': ['管理员预约管理'],
+    'summary': '获取所有预约列表',
+    'description': '管理员获取所有预约列表',
+    'security': [{'Bearer': []}],
+    'parameters': [
+        {
+            'in': 'query',
+            'name': 'equip_id',
+            'type': 'integer',
+            'required': False,
+            'description': '设备ID筛选'
+        },
+        {
+            'in': 'query',
+            'name': 'status',
+            'type': 'integer',
+            'required': False,
+            'description': '状态筛选 (0:待审, 1:通过, 2:拒绝, 3:已取消)'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': '成功返回预约列表',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'code': {'type': 'integer', 'example': 200},
+                    'msg': {'type': 'string', 'example': '查询成功'},
+                    'data': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer', 'example': 1},
+                                'equip_id': {'type': 'integer', 'example': 1},
+                                'status': {'type': 'integer', 'example': 0},
+                                'user_name': {'type': 'string', 'example': '张三'},
+                                'equip_name': {'type': 'string', 'example': '扫描电子显微镜'}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        403: {
+            'description': '需要管理员权限'
+        }
+    }
+})
+def get_all_reservations():
+    """管理员获取所有预约列表"""
+    try:
+        # 获取查询参数
+        equip_id = request.args.get('equip_id', type=int)
+        status = request.args.get('status', type=int)
+        
+        # 构建缓存键
+        cache_key = f'api:admin:reservation:list:equip_{equip_id}:status_{status}'
+        
+        # 尝试从缓存获取
+        cached_data = redis_client.get(cache_key)
+        if cached_data is not None:
+            return success(data=cached_data, msg='查询成功')
+        
+        # 查询所有预约列表（管理员不限制用户）
+        reservations = reservation_service.get_reservation_list(
+            equip_id=equip_id,
+            status=status
+        )
+        
+        # 序列化
+        data = reservation_schema.dump(reservations, many=True)
+        
+        # 存入缓存（3分钟过期）
+        redis_client.set(cache_key, data, ex=180)
+        
+        return success(data=data, msg='查询成功')
+    except Exception as e:
+        return fail(code=500, msg=f'查询失败: {str(e)}')
+
+
+@admin_bp.route('/reservations/<int:reservation_id>/approve', methods=['PUT'])
+@admin_required
+@swag_from({
+    'tags': ['管理员预约管理'],
+    'summary': '审批通过预约',
+    'description': '管理员审批通过预约',
+    'security': [{'Bearer': []}],
+    'parameters': [{
+        'in': 'path',
+        'name': 'reservation_id',
+        'type': 'integer',
+        'required': True,
+        'description': '预约ID'
+    }],
+    'responses': {
+        200: {
+            'description': '成功审批通过',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'code': {'type': 'integer', 'example': 200},
+                    'msg': {'type': 'string', 'example': '审批通过'}
+                }
+            }
+        },
+        403: {
+            'description': '需要管理员权限'
+        },
+        404: {
+            'description': '预约不存在'
+        },
+        422: {
+            'description': '审批失败'
+        }
+    }
+})
+def approve_reservation(reservation_id):
+    """管理员审批通过预约"""
+    try:
+        # 获取当前管理员
+        current_user = get_current_user()
+        
+        # 审批通过（状态改为1-通过）
+        reservation = reservation_service.update_reservation_status(
+            reservation_id, 1, current_user['user_id']
+        )
+        
+        # 序列化返回
+        data = reservation_schema.dump(reservation)
+        return success(data=data, msg='审批通过')
+    except NotFoundError as e:
+        return fail(code=404, msg=e.message)
+    except ValidationError as e:
+        return fail(code=422, msg=e.message, data=e.payload)
+    except Exception as e:
+        return fail(code=500, msg=f'审批失败: {str(e)}')
+
+
+@admin_bp.route('/reservations/<int:reservation_id>/reject', methods=['PUT'])
+@admin_required
+@swag_from({
+    'tags': ['管理员预约管理'],
+    'summary': '审批拒绝预约',
+    'description': '管理员审批拒绝预约',
+    'security': [{'Bearer': []}],
+    'parameters': [{
+        'in': 'path',
+        'name': 'reservation_id',
+        'type': 'integer',
+        'required': True,
+        'description': '预约ID'
+    }],
+    'responses': {
+        200: {
+            'description': '成功审批拒绝',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'code': {'type': 'integer', 'example': 200},
+                    'msg': {'type': 'string', 'example': '审批拒绝'}
+                }
+            }
+        },
+        403: {
+            'description': '需要管理员权限'
+        },
+        404: {
+            'description': '预约不存在'
+        },
+        422: {
+            'description': '审批失败'
+        }
+    }
+})
+def reject_reservation(reservation_id):
+    """管理员审批拒绝预约"""
+    try:
+        # 获取当前管理员
+        current_user = get_current_user()
+        
+        # 审批拒绝（状态改为2-拒绝）
+        reservation = reservation_service.update_reservation_status(
+            reservation_id, 2, current_user['user_id']
+        )
+        
+        # 序列化返回
+        data = reservation_schema.dump(reservation)
+        return success(data=data, msg='审批拒绝')
+    except NotFoundError as e:
+        return fail(code=404, msg=e.message)
+    except ValidationError as e:
+        return fail(code=422, msg=e.message, data=e.payload)
+    except Exception as e:
+        return fail(code=500, msg=f'审批失败: {str(e)}')

@@ -4,5 +4,6 @@
 """
 # 导入服务模块（按需导入）
 from app.services import lab_service, equipment_service
-
+# 添加导入
+from . import reservation_service
 __all__ = ['lab_service', 'equipment_service']
