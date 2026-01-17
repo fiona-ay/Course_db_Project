@@ -10,20 +10,19 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "vue": "^3.4.15",
-    "vue-router": "^4.2.5",
-    "pinia": "^2.1.7",
-    "axios": "^1.6.5",
-    "element-plus": "^2.5.6",
-    "@element-plus/icons-vue": "^2.3.1",
+    "@element-plus/icons-vue": "^2.3.2",
     "@vueuse/core": "^10.7.2",
     "animate.css": "^4.1.1",
-    "lottie-web": "^5.12.2"
+    "axios": "^1.6.5",
+    "element-plus": "^2.5.6",
+    "lottie-web": "^5.12.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",
-    "vite": "^5.0.11",
-    "sass": "^1.69.5"
+    "sass": "^1.69.5",
+    "vite": "^5.0.11"
   }
 }
-
