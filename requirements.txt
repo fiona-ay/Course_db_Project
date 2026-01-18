@@ -1,32 +1,24 @@
-# Flask 核心框架
 Flask==3.0.0
 Werkzeug==3.0.1
 
-# 数据库相关
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 PyMySQL==1.1.0
 cryptography==41.0.7
 
-# 序列化
+
 marshmallow==3.20.1
 Flask-Marshmallow==0.15.0
 marshmallow-sqlalchemy==0.29.0
 
-# API 文档
 flasgger==0.9.7.1
 
-# 环境变量管理
 python-dotenv==1.0.0
 
-# 其他工具
 click==8.1.7
 
-# Redis 缓存
 redis==5.0.1
 
-# JWT 认证
 PyJWT==2.8.0
 
-# CORS 支持
 flask-cors==4.0.0
